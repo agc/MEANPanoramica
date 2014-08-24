@@ -1,0 +1,4 @@
+Consolidate para usar varios engines
+
+http://blog.makewebsmart.com/handlebars-with-expressjs/184
+

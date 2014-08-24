@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title><%= title %></title>
+</head>
+<body>
+<% if (lenguajes.length) { %>
+<ul>
+    <% lenguajes.forEach(function(lenguaje){ %>
+    <li><%= lenguaje %></li>
+    <% }) %>
+</ul>
+<% } %>
+</body>
+</html>

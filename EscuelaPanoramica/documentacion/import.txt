@@ -1,0 +1,1 @@
+ mongoimport --db productos --collection productos --type json --jsonArray --file products.json

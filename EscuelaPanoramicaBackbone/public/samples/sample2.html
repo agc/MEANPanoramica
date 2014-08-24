@@ -1,0 +1,29 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title></title>
+    <script src="/lib/jquery-2.1.1.min.js"></script>
+    <script src="/lib/json2.js"></script>
+    <script src="/lib/underscore-min.js"></script>
+    <script src="/lib/backbone-min.js"></script>
+</head>
+<body>
+Movie Sample 2
+
+<script type="text/javascript">
+    var MovieApp = {
+        Models: {},
+        Collections: {},
+        Views: {},
+        Templates: {}
+    };
+
+    MovieApp.Models.Movie = Backbone.Model.extend({
+        initialize: function () {
+            console.log("Movie Model created 2");
+        }
+    });
+
+    var movie = new MovieApp.Models.Movie();
+</script>
+</body>
+</html>

@@ -1,0 +1,4 @@
+Algunas referencias
+
+file:///home/agc/Desarrollo/MEAN/Soporte/backbone_repositorio_git/docs/backbone.html
+http://addyosmani.github.io/backbone-fundamentals/#static-html

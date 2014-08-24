@@ -1,0 +1,122 @@
+Importar json to Mongodb
+
+mongoimport --db <db-name> --collection <coll-name> --type json --file seed.json
+--jsonArray
+
+mongoimport --db mantenimiento --collection equipo      --type json --file equipo.json      --jsonArray
+mongoimport --db mantenimiento --collection ubicacion   --type json --file ubicacion.json   --jsonArray
+
+Usuarios ubicaciones
+
+MariaDB [mantenimiento]>
+
+select apellido1,apellido2,usuario.nombre, user,password, identificador,ubicacion.nombre
+from usuario left join usuario_ubicacion on usuario.id= usuario_ubicacion.usuario_ubicaciones_id
+left join ubicacion on usuario_ubicacion.ubicacion_id = ubicacion.id
+into outfile '/home/agc/Descargas/usuariosubicados.csv' fields terminated by ',';
+
+En el archivo csv se añaden los nombres de los campos
+
+apellido1,apellido2,nombre,user,password,identificador_ubicacion,nombre_ubicacion
+
+Script mongo para unificar usuarios y ubicaciones
+
+
+(function( ) {
+	var coleccion=db.temporal
+
+
+
+        function existe(usuario) {
+		if (coleccion.find({apellido1:usuario.apellido1,apellido2:usuario.apellido2,nombre:usuario.nombre},{"_id":1}).limit(1).size()==0) return false
+		else
+		return true
+
+	}
+
+	function procesar_usuario(usuario) {
+
+	if (!existe(usuario)) {
+
+		usuario.ubicaciones=[{identificador:usuario.identificador_ubicacion,nombre:usuario.nombre_ubicacion}] // crea un array con un elemento
+		delete usuario.identificador_ubicacion						  //elimina los campos que se han usado para formar el array
+		delete usuario.nombre_ubicacion
+
+		coleccion.insert(usuario) 									 //inserta el usuario reconstruido en la nueva colección
+
+	}
+	else {
+		// introducir la información de ubicacion en el array ubicaciones
+		var ubicacion={identificador:usuario.identificador_ubicacion,nombre:usuario.nombre_ubicacion}
+		coleccion.update({apellido1:usuario.apellido1,apellido2:usuario.apellido2,nombre:usuario.nombre},{$addToSet:{ubicaciones:ubicacion}})
+
+	}
+	}
+
+        coleccion.drop()   										     // cuidado borra la coleccion
+        db.usuarios.find().forEach(procesar_usuario)
+
+
+})();
+
+Reorganizar equipos y ubicaciones
+
+En lugar de hacer una sentencia con tablas relacionadas manejo directamente los volcados
+json de las tablas originales. Se crea una tabla de ubicaciones y cada ubicacion contiene los equipos en el array
+
+(function() {
+
+var coleccion=db.temporal
+
+function completar_con_equipos(ubicacion) {
+	ubicacion.equipos=[]
+
+	// un array de objetos equipo
+	var equipos_en_ubicacion=db.equipo.find({ubicacion_id : ubicacion.id}).map(
+
+function (e) {
+
+	return {	codigo:e.codigo,
+			descripcion:e.descripcion,descripcion_ubicacion:e.descripcion_ubicacion,
+			disco_duro:e.disco_duro,marca:e.marca,memoria:e.memoria,modelo:e.modelo,
+			ano_de_compra:e.ano_de_compra,red:e.red,tipo:e.tipo}
+			})
+	ubicacion.equipos=equipos_en_ubicacion
+	delete ubicacion.id
+	coleccion.insert(ubicacion)
+}
+
+db.temporal.drop()
+
+db.ubicacion.find({},{version:0,restringida:0}).forEach(completar_con_equipos)
+
+})();
+
+y cargarlas en mongo
+
+db.coleccion.renameCollections("nuevo_nombre")
+db.coleccion.drop()
+
+actualizar todos los registros
+
+ db.usuarios.update({},{$set:{"activo":true}},{multi:true})
+ db.usuarios.update({},{$set:{"rol":"usuario"}},{multi:true})
+
+
+Averias con información de usuario,ubicacion y equipo
+
+select usuario.user,ubicacion.identificador,equipo.codigo, asunto,caracter_aviso,
+       date_created,last_updated,estado,texto,tiempo_empleado,averia.tipo
+       from averia,usuario,ubicacion,equipo
+       where averia.emisor_id=usuario.id
+       and averia.ubicacion_id= ubicacion.id
+       and averia.equipo_id=equipo.id
+       into outfile '/home/agc/Descargas/averias_completadas.csv' fields terminated by ',';
+
+Se añade a la primera fila los nombres de los campos
+
+usuario,ubicacion,equipo,asunto,caracter_aviso,creado,modificado,estado,texto,tiempo_empleado,tipo_averia
+
+
+
+mongoimport   -d mantenimiento -c averias --type csv --file averias_completadas.csv --headerline
